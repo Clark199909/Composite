@@ -1,6 +1,6 @@
 from typing import Dict
 import requests
-from .urls import get_contacts_url
+from .config import get_contacts_url
 
 class ContactResource:
     def __int__(self):
