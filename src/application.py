@@ -29,12 +29,12 @@ def load_user(user_id):
     return User.get(user_id)
 
 
-# @app.before_request
-# def before_decorator():
-#     if request.path not in white_list and not current_user.is_authenticated:
-#         response = jsonify("User is not authenticated!")
-#         response.status_code = 400
-#         return response
+@app.before_request
+def before_decorator():
+    if request.path not in white_list and not current_user.is_authenticated:
+        response = jsonify("User is not authenticated!")
+        response.status_code = 400
+        return response
 
 
 @app.route("/")
