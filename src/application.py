@@ -2,7 +2,7 @@ from flask import request, jsonify
 from src import app
 
 from src.resources.contacts import ContactResource
-from src.resources.notification import notification
+from src.notification import notification
 
 """
 example request body 1:
@@ -35,6 +35,7 @@ example request body 3:
     }
 }
 """
+
 @app.route("/api/contacts/<uni>/add", methods=['POST'])
 @notification
 def add_one_contact(uni):

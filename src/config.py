@@ -2,8 +2,8 @@
 __config = {'students': 'http://127.0.0.1:5012',
             'courses': 'http://127.0.0.1:5013',
             'contacts': 'http://127.0.0.1:5014',
-            'sns_topic': "arn:aws:sns:us-east-1:xxxxxxx:6156_db_update",
-            'slack_urls': ['https://hooks.slack.com/services/xxx/xxx'],
+            'sns_topic': "arn:aws:sns:us-east-1:xxx:6156_db_update",
+            'slack_urls': ['https://hooks.slack.com/services/xxx/xxxxx'],
             }
 
 def get_students_url():
