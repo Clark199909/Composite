@@ -19,8 +19,8 @@ CORS(app)
 # Configuration
 # GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
 # GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
-GOOGLE_CLIENT_ID = "971809948453-vjdoac19oth20e6srqq47fm8h6j50i3t.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET = "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"
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
 GOOGLE_DISCOVERY_URL = (
     "https://accounts.google.com/.well-known/openid-configuration"
 )
