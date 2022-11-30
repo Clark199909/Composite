@@ -29,12 +29,12 @@ def load_user(user_id):
     return User.get(user_id)
 
 
-@app.before_request
-def before_decorator():
-    if request.path not in white_list and not current_user.is_authenticated:
-        response = jsonify("User is not authenticated!")
-        response.status_code = 400
-        return response
+# @app.before_request
+# def before_decorator():
+#     if request.path not in white_list and not current_user.is_authenticated:
+#         response = jsonify("User is not authenticated!")
+#         response.status_code = 400
+#         return response
 
 
 @app.route("/")
@@ -133,7 +133,7 @@ def get_all_students_info():
 # DELETE: delete a student (remember to delete the student record & students' contacts & change in projects
 # ; if the project only has this one student, delete the whole project)
 @app.route("/api/students/<uni>", methods=['POST', 'GET', 'PUT', 'DELETE'])
-def get_all_students_info(uni):
+def manipulate_a_student(uni):
     pass
 
 
@@ -148,57 +148,43 @@ def get_students_info_or_contact_by_attribute(info_type, attribute):
 """
 example request body 1:
 {
-    "type": "address",
-    "data": {
-        "description": "home",
-        "country": "USA",
-        "state": "NY",
-        "city": "NY",
-        "zip_code": "10025",
-        "street": "125W 109th St"
-    }
+    "description": "home",
+    "country": "USA",
+    "state": "NY",
+    "city": "NY",
+    "zip_code": "10025",
+    "street": "125W 109th St"
 }
 example request body 2:
 {
-    "type": "phone",
-    "data": {
-        "description": "mobile",
-        "country_code": "1",
-        "phone_no": "3476290991"
-    }
+    "description": "mobile",
+    "country_code": "1",
+    "phone_no": "3476290991"
 }
 example request body 3:
 {
-    "type": "email",
-    "data": {
-        "description": "personal",
-        "address": "dw3013@columbia.edu"
-    }
+    "description": "personal",
+    "address": "dw3013@columbia.edu"
 }
 """
 
-# maybe consider changing to "/api/contacts/<uni>/add/<type>"?
-@app.route("/api/contacts/<uni>/add", methods=['POST'])
+@app.route("/api/contacts/<uni>/add/<contact_type>", methods=['POST'])
 @notification
-def add_one_contact(uni):
+def add_one_contact(uni, contact_type):
     data = request.json
-    if 'type' not in data or 'data' not in data:
-        response = jsonify('Incomplete request body')
-        response.status_code = 400
-        return response
 
-    if data['type'] == 'address':
-        r = ContactResource.add_one_address(uni, body=data['data'])
+    if contact_type == 'address':
+        r = ContactResource.add_one_address(uni, body=data)
         response = jsonify(r.text)
         response.status_code = r.status_code
         return response
-    elif data['type'] == 'phone':
-        r = ContactResource.add_one_phone(uni, body=data['data'])
+    elif contact_type == 'phone':
+        r = ContactResource.add_one_phone(uni, body=data)
         response = jsonify(r.text)
         response.status_code = r.status_code
         return response
-    elif data['type'] == 'email':
-        r = ContactResource.add_one_email(uni, body=data['data'])
+    elif contact_type == 'email':
+        r = ContactResource.add_one_email(uni, body=data)
         response = jsonify(r.text)
         response.status_code = r.status_code
         return response
