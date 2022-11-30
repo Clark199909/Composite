@@ -120,6 +120,31 @@ def logout():
     return redirect(url_for("index"))
 
 
+# Get all students’ info (uni, name, nationality, ethnicity, gender, admission date, section, project)
+@app.route("/api/students/all_students", methods=['GET'])
+def get_all_students_info():
+    pass
+
+
+# Create a student & Get & Edit & Delete a student's info
+# POST: create a student and register the student to a course session
+# GET: get a student's info (like fields in the all students info method)
+# PUT: edit a student's info
+# DELETE: delete a student (remember to delete the student record & students' contacts & change in projects
+# ; if the project only has this one student, delete the whole project)
+@app.route("/api/students/<uni>", methods=['POST', 'GET', 'PUT', 'DELETE'])
+def get_all_students_info(uni):
+    pass
+
+
+# Get student (general info/contact) by name/session call_no/project name/nationality/gender
+# if info_type = "info", get students' fields (like above apis) according to the attribute
+# if info_type = "contacts", get students' contacts fields (like below apis) according to the attribute
+# attribute is name/session call_no/project name/nationality/gender
+@app.route("/api/students/<info_type>/<attribute>")
+def get_students_info_or_contact_by_attribute(info_type, attribute):
+    pass
+
 """
 example request body 1:
 {
@@ -152,6 +177,7 @@ example request body 3:
 }
 """
 
+# maybe consider changing to "/api/contacts/<uni>/add/<type>"?
 @app.route("/api/contacts/<uni>/add", methods=['POST'])
 @notification
 def add_one_contact(uni):
@@ -180,6 +206,49 @@ def add_one_contact(uni):
         response = jsonify('Incorrect type')
         response.status_code = 400
         return response
+
+
+# fields include uni, first name, last name, type, note, content
+# type means general type of contacts (email or address or phone?)
+# note means specific type of one type of contact (e.g. mobile or home for phone contacts)
+# content means contact info (e.g. country code + phone number for phone contacts)
+@app.route("/api/contacts/all_students", methods=['GET'])
+def get_all_contacts_of_all_students():
+    pass
+
+
+@app.route("/api/contacts/<uni>", methods=['GET'])
+def get_all_contacts_of_a_student(uni):
+    pass
+
+
+@app.route("/api/contacts/<uni>/<type>/<note>", methods=['PUT', 'DELETE'])
+def manipulate_a_contact(uni, type, note):
+    pass
+
+
+@app.route("/api/courses/new_session", methods=['POST'])
+def add_a_new_session():
+    pass
+
+
+# Get or edit or delete a session
+@app.route("/api/courses/<call_no>", methods=['GET', 'PUT', 'DELETE'])
+def manipulate_a_session(call_no):
+    pass
+
+
+@app.route("/api/courses/<call_no>/new_project", methods=['POST'])
+def add_a_new_project(call_no):
+    pass
+
+
+# Get or edit or delete a project
+@app.route("/api/courses/<call_no>/projects/<project_id>", methods=['GET', 'PUT', 'DELETE'])
+def manipulate_a_project(call_no, project_id):
+    pass
+
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5011, ssl_context="adhoc")
