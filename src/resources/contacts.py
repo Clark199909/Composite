@@ -73,3 +73,4 @@ class ContactProcessing:
             return ContactProcessing.phone_processing(content)
         elif type == 'email':
             return ContactProcessing.email_processing(content)
+
