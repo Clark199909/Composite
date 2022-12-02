@@ -48,8 +48,8 @@ def delete_a_student():
     url_1 = CONTACT_URL + "/api/contacts/del_student"
 
     r_list = []
-    r_list.append(requests.post(url_0, json=data).text[1:-2])
-    r_list.append(requests.post(url_1, json=data).text[1:-2])
+    r_list.append(requests.delete(url_0, json=data).text[1:-2])
+    r_list.append(requests.delete(url_1, json=data).text[1:-2])
 
     response = jsonify(r_list)
     response.status_code = 302
@@ -71,7 +71,7 @@ def update_a_student():
     """
     url = STUDENT_URL + "/api/students/update_student"
     data = request.json
-    r = requests.post(url, json=data)
+    r = requests.put(url, json=data)
     body = r.text[1:-2]
     response = jsonify(body)
     response.status_code = 302
@@ -183,7 +183,7 @@ def update_a_contact(uni, type):
     if type == 'address' or type == 'email' or type == 'phone':
         url = CONTACT_URL + "/api/contacts/" + uni + "/update_"+type
         data = request.json
-        r = requests.post(url, json=data)
+        r = requests.put(url, json=data)
     else:
         response = jsonify('Not existing type')
         response.status_code = 400
@@ -213,7 +213,7 @@ def delete_a_contact(uni, type):
     if type == 'address' or type == 'email' or type == 'phone':
         url = CONTACT_URL + "/api/contacts/" + uni + "/del_"+type
         data = request.json
-        r = requests.post(url, json=data)
+        r = requests.delete(url, json=data)
     else:
         response = jsonify('Not existing type')
         response.status_code = 400
