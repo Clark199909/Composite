@@ -34,7 +34,7 @@ def add_new_student():
     return response
 
 
-@app.route("/api/students/delete", methods=['POST'])
+@app.route("/api/students/delete", methods=['DELETE'])
 def delete_a_student():
     """JSON copy to test on Postman
     {
@@ -56,7 +56,7 @@ def delete_a_student():
     return response
 
 
-@app.route("/api/students/update", methods=['POST'])
+@app.route("/api/students/update", methods=['PUT'])
 def update_a_student():
     """JSON copy to test
     {
@@ -156,7 +156,7 @@ def add_new_contact(uni, type):
     return response
 
 
-@app.route("/api/contacts/<uni>/update/<type>", methods=['POST'])
+@app.route("/api/contacts/<uni>/update/<type>", methods=['PUT'])
 def update_a_contact(uni, type):
     """ Note: here type can be phone, email or address
     JSON copy to test on Postman (phone)
@@ -194,7 +194,7 @@ def update_a_contact(uni, type):
     return response
 
 
-@app.route("/api/contacts/<uni>/del/<type>", methods=['POST'])
+@app.route("/api/contacts/<uni>/del/<type>", methods=['DELETE'])
 def delete_a_contact(uni, type):
     """ Note: here type can be phone, email or address
     JSON copy to test on Postman (phone)
