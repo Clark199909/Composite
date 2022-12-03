@@ -22,12 +22,12 @@ from src import client
 from src.resources.students import StudentProcessing
 from src.resources.contacts import ContactProcessing
 
+from src.config import get_courses_url
+from src.config import get_students_url
+from src.config import get_contacts_url
+
 
 white_list = {"/", "/login", "login/callback"}
-
-COURSE_URL = "http://0.0.0.0:5011"
-CONTACT_URL = "http://0.0.0.0:5012"
-STUDENT_URL = "http://0.0.0.0:5013"
 
 
 # Flask-Login helper to retrieve a user from our db
@@ -142,8 +142,8 @@ def add_new_student():
     """
     data = request.json
 
-    url_0 = STUDENT_URL + "/api/students/new_student"
-    url_1 = CONTACT_URL + "/api/contacts/new_student"
+    url_0 = get_students_url() + "/api/students/new_student"
+    url_1 = get_contacts_url() + "/api/contacts/new_student"
 
     r_list = []
     r_list.append(requests.post(url_0, json=data).text[1:-2])
@@ -163,8 +163,8 @@ def delete_a_student():
     """
     data = request.json
 
-    url_0 = STUDENT_URL + "/api/students/del_student"
-    url_1 = CONTACT_URL + "/api/contacts/del_student"
+    url_0 = get_students_url() + "/api/students/del_student"
+    url_1 = get_contacts_url() + "/api/contacts/del_student"
 
     r_list = []
     r_list.append(requests.delete(url_0, json=data).text[1:-2])
@@ -188,7 +188,7 @@ def update_a_student():
         "admission_date": "12/14/2022"
     }
     """
-    url = STUDENT_URL + "/api/students/update_student"
+    url = get_students_url() + "/api/students/update_student"
     data = request.json
     r = requests.put(url, json=data)
     body = r.text[1:-2]
@@ -212,7 +212,7 @@ def get_student_by_uni(uni):
         }
     ]
     """
-    url = STUDENT_URL + "/api/students/" + uni
+    url = get_students_url() + "/api/students/" + uni
     content = requests.get(url).json()
     info = StudentProcessing.processing(content)
     response = jsonify(info)
@@ -238,7 +238,7 @@ def all_student():
     ]
     Note: if a student do not have email, his/her email will be like { email: '' }
     """
-    url = STUDENT_URL + "/api/students"
+    url = get_students_url() + "/api/students"
     content = requests.get(url).json()
     info = StudentProcessing.processing(content)
     response = jsonify(info)
@@ -271,7 +271,7 @@ def add_new_contact(uni, type):
     }
     """
     if type == 'address' or type == 'email' or type == 'phone':
-        url = CONTACT_URL + "/api/contacts/" + uni + "/new_"+type
+        url = get_contacts_url() + "/api/contacts/" + uni + "/new_"+type
         data = request.json
         r = requests.post(url, json=data)
     else:
@@ -309,7 +309,7 @@ def update_a_contact(uni, type):
     }
     """
     if type == 'address' or type == 'email' or type == 'phone':
-        url = CONTACT_URL + "/api/contacts/" + uni + "/update_"+type
+        url = get_contacts_url() + "/api/contacts/" + uni + "/update_"+type
         data = request.json
         r = requests.put(url, json=data)
     else:
@@ -339,7 +339,7 @@ def delete_a_contact(uni, type):
     }
     """
     if type == 'address' or type == 'email' or type == 'phone':
-        url = CONTACT_URL + "/api/contacts/" + uni + "/del_"+type
+        url = get_contacts_url() + "/api/contacts/" + uni + "/del_"+type
         data = request.json
         r = requests.delete(url, json=data)
     else:
@@ -371,9 +371,9 @@ def get_contact_by_type_and_uni(uni, type):
     """
     if type == 'address' or type == 'email' or type == 'phone':
         if type == 'address':
-            url = CONTACT_URL + "/api/contacts/" + uni + "/all_addresses"
+            url = get_contacts_url() + "/api/contacts/" + uni + "/all_addresses"
         else:
-            url = CONTACT_URL + "/api/contacts/" + uni + "/all_" + type + "s"
+            url = get_contacts_url() + "/api/contacts/" + uni + "/all_" + type + "s"
         content = requests.get(url).json()
         contact = ContactProcessing.processing(type, content)
     else:
@@ -398,9 +398,9 @@ def get_contact_by_type(type):
     """
     if type == 'address' or type == 'email' or type == 'phone':
         if type == 'address':
-            url = CONTACT_URL + "/api/contacts/all_addresses"
+            url = get_contacts_url() + "/api/contacts/all_addresses"
         else:
-            url = CONTACT_URL + "/api/contacts/all_" + type + "s"
+            url = get_contacts_url() + "/api/contacts/all_" + type + "s"
         content = requests.get(url).json()
         contact = ContactProcessing.processing(type, content)
     else:
@@ -422,7 +422,7 @@ def get_contact_by_uni(uni):
         [(emails)]
     ]
     """
-    url = CONTACT_URL+'/api/contacts/'+uni+'/all_contacts'
+    url =  get_contacts_url()+'/api/contacts/'+uni+'/all_contacts'
     content = requests.get(url).json()
 
     addr_list = ContactProcessing.address_processing(content[0])
@@ -445,7 +445,7 @@ def all_contact():
         [(emails)]
     ]
     """
-    url = CONTACT_URL+'/api/contacts/all_contacts'
+    url = get_contacts_url()+'/api/contacts/all_contacts'
     content = requests.get(url).json()
 
     addr_list = ContactProcessing.address_processing(content[0])
@@ -479,7 +479,6 @@ def add_a_new_project(call_no):
 @app.route("/api/courses/<call_no>/projects/<project_id>", methods=['GET', 'PUT', 'DELETE'])
 def manipulate_a_project(call_no, project_id):
     pass
-
 
 
 if __name__ == "__main__":
