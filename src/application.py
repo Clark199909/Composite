@@ -9,7 +9,6 @@ import requests
 import json
 
 from src import app
-from src.resources.contacts import ContactResource
 from src.notification import notification
 from src.resources.user_resource import UserResource
 from src.models.user import User
@@ -28,6 +27,7 @@ from src.config import get_contacts_url
 
 
 white_list = {"/", "/login", "login/callback"}
+notification_block_list = {"/", "/login", "login/callback"}
 
 
 # Flask-Login helper to retrieve a user from our db
@@ -43,6 +43,11 @@ def before_decorator():
         response.status_code = 400
         return response
 
+@app.after_request
+def send_notification(response):
+    if request.path not in notification_block_list:
+        notification(response)
+    return response
 
 @app.route("/")
 def index():
@@ -273,14 +278,19 @@ def add_new_contact(uni, type):
     if type == 'address' or type == 'email' or type == 'phone':
         url = get_contacts_url() + "/api/contacts/" + uni + "/new_"+type
         data = request.json
-        r = requests.post(url, json=data)
+        try:
+            r = requests.post(url, json=data)
+        except:
+            response = jsonify('Cannot connect to microservice')
+            response.status_code = 500
+            return response
     else:
         response = jsonify('Not existing type')
         response.status_code = 400
         return response
     body = r.text[1:-2]
     response = jsonify(body)
-    response.status_code = 302
+    response.status_code = 200
     return response
 
 
