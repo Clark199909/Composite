@@ -5,3 +5,4 @@ requests
 boto3
 flask_sqlalchemy
 oauthlib
+smartystreets_python_sdk

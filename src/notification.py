@@ -13,8 +13,6 @@ def notification(response):
         pass
     text += f"response: {repr(response)}\n"
     try:
-        print(get_sns_topic())
-        print(get_slack_urls())
         sns = boto3.resource('sns')
         topic = sns.Topic(get_sns_topic())
         for url in get_slack_urls():

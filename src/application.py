@@ -10,6 +10,7 @@ import json
 
 from src import app
 from src.notification import notification
+from src.smarty import verify_address
 from src.resources.user_resource import UserResource
 from src.models.user import User
 from src import login_manager
@@ -44,7 +45,7 @@ def before_decorator():
         return response
 
 @app.after_request
-def send_notification(response):
+def after_decorator(response):
     if request.path not in notification_block_list:
         notification(response)
     return response
@@ -278,8 +279,15 @@ def add_new_contact(uni, type):
     if type == 'address' or type == 'email' or type == 'phone':
         url = get_contacts_url() + "/api/contacts/" + uni + "/new_"+type
         data = request.json
+
+        check_passed, check_comment, correct_address = verify_address(data)
+        if not check_passed:
+            response = jsonify(f"address verification failed: {check_comment}")
+            response.status_code = 400
+            return response 
+
         try:
-            r = requests.post(url, json=data)
+            r = requests.post(url, json=correct_address)
         except:
             response = jsonify('Cannot connect to microservice')
             response.status_code = 500
@@ -289,7 +297,7 @@ def add_new_contact(uni, type):
         response.status_code = 400
         return response
     body = r.text[1:-2]
-    response = jsonify(body)
+    response = jsonify(body + f"; address verification result: {check_comment}")
     response.status_code = 200
     return response
 
@@ -321,14 +329,26 @@ def update_a_contact(uni, type):
     if type == 'address' or type == 'email' or type == 'phone':
         url = get_contacts_url() + "/api/contacts/" + uni + "/update_"+type
         data = request.json
-        r = requests.put(url, json=data)
+
+        check_passed, check_comment, correct_address = verify_address(data)
+        if not check_passed:
+            response = jsonify(f"address verification failed: {check_comment}")
+            response.status_code = 400
+            return response 
+
+        try:
+            r = requests.put(url, json=correct_address)
+        except:
+            response = jsonify('Cannot connect to microservice')
+            response.status_code = 500
+            return response
     else:
         response = jsonify('Not existing type')
         response.status_code = 400
         return response
     body = r.text[1:-2]
-    response = jsonify(body)
-    response.status_code = 302
+    response = jsonify(body + f"; address verification result: {check_comment}")
+    response.status_code = 200
     return response
 
 
@@ -493,3 +513,4 @@ def manipulate_a_project(call_no, project_id):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5011, ssl_context="adhoc")
+

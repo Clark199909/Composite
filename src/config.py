@@ -19,4 +19,11 @@ def get_sns_topic():
 
 def get_slack_urls():
     slack_urls_str = os.environ.get('slack_urls')
-    return [] if slack_urls_str is None else [entry for entry in slack_urls_str.split(' ') if len(entry) > 0]
+    return [] if slack_urls_str is None else [entry for entry in slack_urls_str.split(';') if len(entry) > 0]
+
+def get_smarty_auth_id():
+    return os.environ.get('smarty_auth_id')
+
+def get_smarty_auth_token():
+    return os.environ.get('smarty_auth_token')
+
