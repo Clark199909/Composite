@@ -12,9 +12,10 @@ app = Flask(__name__,
             template_folder='web/templates')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:root@localhost/users'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SESSION_COOKIE_HTTPONLY'] = False
 db = SQLAlchemy(app)
 
-CORS(app)
+CORS(app, supports_credentials=True)
 
 # Configuration
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
@@ -32,3 +33,6 @@ login_manager.init_app(app)
 
 # OAuth 2 client setup
 client = WebApplicationClient(GOOGLE_CLIENT_ID)
+
+
+
