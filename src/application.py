@@ -1,9 +1,11 @@
-from flask import request, jsonify, redirect, url_for
+from flask import request, jsonify, redirect, url_for, current_app, session
 from flask_login import (
     current_user,
     login_required,
     login_user,
     logout_user,
+    user_logged_out,
+    COOKIE_NAME
 )
 import requests
 import json
@@ -21,28 +23,34 @@ from src import client
 
 from src.resources.students import StudentProcessing
 from src.resources.contacts import ContactProcessing
+from src.resources.courses import CourseResource
 
 from src.config import get_courses_url
 from src.config import get_students_url
 from src.config import get_contacts_url
 
 
-white_list = {"/", "/login", "login/callback"}
+
+white_list = {"/", "/login", "/login/callback"}
+FRONTEND_INDEX = "http://localhost:4200"
 notification_block_list = {"/", "/login", "login/callback"}
+
 
 
 # Flask-Login helper to retrieve a user from our db
 @login_manager.user_loader
 def load_user(user_id):
+    print(user_id)
     return User.get(user_id)
 
 
-@app.before_request
-def before_decorator():
-    if request.path not in white_list and not current_user.is_authenticated:
-        response = jsonify("User is not authenticated!")
-        response.status_code = 400
-        return response
+# @app.before_request
+# def before_decorator():
+#     if request.path not in white_list:
+#         if "Uid" not in request.headers or not User.get(request.headers["Uid"]).is_authenticated:
+#             response = jsonify("User is not authenticated!")
+#             response.status_code = 400
+#             return response
 
 @app.after_request
 def after_decorator(response):
@@ -52,14 +60,15 @@ def after_decorator(response):
 
 @app.route("/")
 def index():
-    if current_user.is_authenticated:
-        response = jsonify("User is logged in.")
-        response.status_code = 200
-        return response
-    else:
+
+    if "Uid" not in request.headers or not User.get(request.headers["Uid"]).is_authenticated:
         response = jsonify("User needs to log in.")
-        response.status_code = 300
+        response.status_code = 201
         return response
+
+    response = jsonify("User is logged in.")
+    response.status_code = 200
+    return response
 
 
 def get_google_provider_cfg():
@@ -74,10 +83,13 @@ def login():
     request_uri = client.prepare_request_uri(
         authorization_endpoint,
         redirect_uri=request.base_url + "/callback",
+        #redirect_uri="http://localhost:4200/",
         scope=["openid", "email", "profile"],
     )
 
-    return redirect(request_uri)
+    response = jsonify(request_uri)
+    response.status_code = 200
+    return response
 
 
 @app.route("/login/callback")
@@ -123,14 +135,41 @@ def callback():
 
     login_user(user)
 
-    return redirect(url_for("index"))
+    url = FRONTEND_INDEX + "/?uid=" + unique_id
+    return redirect(url)
 
 
 @app.route("/logout")
-@login_required
+# @login_required
 def logout():
-    logout_user()
-    return redirect(url_for("index"))
+    user = User.get(request.headers["Uid"])
+    custom_logout(user)
+
+    response = jsonify("User is logged out.")
+    response.status_code = 200
+    return response
+
+
+def custom_logout(user):
+    if "_user_id" in session:
+        session.pop("_user_id")
+
+    if "_fresh" in session:
+        session.pop("_fresh")
+
+    if "_id" in session:
+        session.pop("_id")
+
+    cookie_name = current_app.config.get("REMEMBER_COOKIE_NAME", COOKIE_NAME)
+    if cookie_name in request.cookies:
+        session["_remember"] = "clear"
+        if "_remember_seconds" in session:
+            session.pop("_remember_seconds")
+
+    user_logged_out.send(current_app._get_current_object(), user=user)
+
+    current_app.login_manager._update_request_context_with_user()
+    return True
 
 
 @app.route("/api/students/add", methods=['POST'])
@@ -155,7 +194,7 @@ def add_new_student():
     r_list.append(requests.post(url_0, json=data).text[1:-2])
     r_list.append(requests.post(url_1, json=data).text[1:-2])
     response = jsonify(r_list)
-    response.status_code = 302
+    response.status_code = 200
     return response
 
 
@@ -224,20 +263,11 @@ def get_student_by_uni(uni):
     response = jsonify(info)
     response.status_code = 302
     return response
-    
-    
-# Get student (general info/contact) by name/session call_no/project name/nationality/gender
-# if info_type = "info", get students' fields (like above apis) according to the attribute
-# if info_type = "contacts", get students' contacts fields (like below apis) according to the attribute
-# attribute is name/session call_no/project name/nationality/gender
-@app.route("/api/students/<info_type>/<attribute>")
-def get_students_info_or_contact_by_attribute(info_type, attribute):
-    pass
 
 
 @app.route("/api/students/all", methods=['GET'])
 def all_student():
-    """JSON respone be like
+    """JSON response be like
     [
         {(student info 1)},
         {(student info 2)}
@@ -248,7 +278,7 @@ def all_student():
     content = requests.get(url).json()
     info = StudentProcessing.processing(content)
     response = jsonify(info)
-    response.status_code = 302
+    response.status_code = 200
     return response
 
 
@@ -297,6 +327,7 @@ def add_new_contact(uni, type):
         response.status_code = 400
         return response
     body = r.text[1:-2]
+
     response = jsonify(body + f"; address verification result: {check_comment}")
     response.status_code = 200
     return response
@@ -347,13 +378,14 @@ def update_a_contact(uni, type):
         response.status_code = 400
         return response
     body = r.text[1:-2]
+
     response = jsonify(body + f"; address verification result: {check_comment}")
     response.status_code = 200
     return response
 
 
-@app.route("/api/contacts/<uni>/del/<type>", methods=['DELETE'])
-def delete_a_contact(uni, type):
+@app.route("/api/contacts/<uni>/del/<type>/<note>", methods=['DELETE'])
+def delete_a_contact(uni, type, note):
     """ Note: here type can be phone, email or address
     JSON copy to test on Postman (phone)
     {
@@ -369,16 +401,15 @@ def delete_a_contact(uni, type):
     }
     """
     if type == 'address' or type == 'email' or type == 'phone':
-        url = get_contacts_url() + "/api/contacts/" + uni + "/del_"+type
-        data = request.json
-        r = requests.delete(url, json=data)
+        url = get_contacts_url() + "/api/contacts/" + uni + "/del_"+type + "/" + note
+        r = requests.delete(url)
     else:
         response = jsonify('Not existing type')
         response.status_code = 400
         return response
     body = r.text[1:-2]
     response = jsonify(body)
-    response.status_code = 302
+    response.status_code = 200
     return response
 
 
@@ -482,33 +513,81 @@ def all_contact():
     phone_list = ContactProcessing.phone_processing(content[1])
     email_list = ContactProcessing.email_processing(content[2])
 
-    list = [addr_list, phone_list, email_list]
+    list = addr_list + phone_list + email_list
 
     response = jsonify(list)
-    response.status_code = 302
+    response.status_code = 200
     return response
 
 
-@app.route("/api/courses/new_session", methods=['POST'])
-def add_a_new_session():
-    pass
+@app.route("/api/courses/new_section", methods=['POST'])
+def add_a_new_section():
+    body = request.json
+    r = CourseResource.add_new_section(body)
+
+    response = jsonify(r.text[1:-2])
+    response.status_code = r.status_code
+    return response
 
 
-# Get or edit or delete a session
-@app.route("/api/courses/<call_no>", methods=['GET', 'PUT', 'DELETE'])
-def manipulate_a_session(call_no):
-    pass
+@app.route("/api/courses/all_sections", methods=['GET'])
+def get_all_sections():
+    r = CourseResource.get_all_sections()
+    response = jsonify(r.json())
+    response.status_code = r.status_code
+    return response
+
+
+# Get or edit or delete a section
+@app.route("/api/courses/<call_no>", methods=['PUT', 'DELETE'])
+def manipulate_a_section(call_no):
+    if request.method == 'DELETE':
+        r = CourseResource.del_a_section(call_no)
+        response = jsonify(r.text[1:-2])
+        response.status_code = r.status_code
+        return response
+    else:
+        body = request.json
+        r = CourseResource.update_a_section(call_no, body)
+
+        response = jsonify(r.text[1:-2])
+        response.status_code = r.status_code
+        return response
 
 
 @app.route("/api/courses/<call_no>/new_project", methods=['POST'])
 def add_a_new_project(call_no):
-    pass
+    body = request.json
+    r = CourseResource.add_new_project(call_no, body)
+
+    response = jsonify(r.text[1:-2])
+    response.status_code = r.status_code
+    return response
+
+
+@app.route("/api/courses/all_projects", methods=['GET'])
+def get_all_projects():
+    r = CourseResource.get_all_projects()
+    response = jsonify(r.json())
+    response.status_code = r.status_code
+    return response
 
 
 # Get or edit or delete a project
-@app.route("/api/courses/<call_no>/projects/<project_id>", methods=['GET', 'PUT', 'DELETE'])
-def manipulate_a_project(call_no, project_id):
-    pass
+@app.route("/api/courses/projects/<project_id>", methods=['PUT', 'DELETE'])
+def manipulate_a_project(project_id):
+    if request.method == 'DELETE':
+        r = CourseResource.del_a_project(project_id)
+        response = jsonify(r.text[1:-2])
+        response.status_code = r.status_code
+        return response
+    else:
+        body = request.json
+        r = CourseResource.update_a_project(project_id, body)
+
+        response = jsonify(r.text[1:-2])
+        response.status_code = r.status_code
+        return response
 
 
 if __name__ == "__main__":

@@ -16,8 +16,7 @@ class StudentProcessing:
                 'nationality': record['nationality'],
                 'ethnicity': record['ethnicity'],
                 'gender': record['gender'],
-                'admission_date': record['admission_date'],
-                'email': email
+                'admission_date': record['admission_date']
             }
             info_list.append(info)
         return info_list
