@@ -220,25 +220,31 @@ def delete_a_student(call_no, uni):
     return response
 
 
-@app.route("/api/students/update", methods=['PUT'])
-def update_a_student():
+@app.route("/api/students/update/<uni>", methods=['PUT'])
+def update_a_student(uni):
     """JSON copy to test
     {
-        "uni": "ab1234",
         "first_name": "Daviiiid",
         "last_name": "Martin",
         "nationality": "United States",
         "race": "White",
         "gender": "Male",
-        "admission_date": "12/14/2022"
+        "admission_date": "12/14/2022",
+        "call_no": 1,
+        "project_id":null
     }
     """
-    url = get_students_url() + "/api/students/update_student"
+    students_url = get_students_url() + f'/api/students/update_student/{uni}'
+    courses_url = get_courses_url() + f'/api/enrollment/{uni}'
     data = request.json
-    r = requests.put(url, json=data)
-    body = r.text[1:-2]
-    response = jsonify(body)
-    response.status_code = 302
+
+    r_list = []
+    r1 = requests.put(students_url, json=data)
+    r2 = requests.put(courses_url, json=data)
+    r_list.append(r1.text[1:-2])
+    r_list.append(r2.text[1:-2])
+    response = jsonify(r_list)
+    response.status_code = 200
     return response
 
 
