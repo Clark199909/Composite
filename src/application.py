@@ -52,11 +52,11 @@ def load_user(user_id):
 #             response.status_code = 400
 #             return response
 
-@app.after_request
-def after_decorator(response):
-    if request.path not in notification_block_list:
-        notification(response)
-    return response
+# @app.after_request
+# def after_decorator(response):
+#     if request.path not in notification_block_list:
+#         notification(response)
+#     return response
 
 @app.route("/")
 def index():
@@ -180,43 +180,43 @@ def add_new_student():
         "first_name": "David",
         "last_name": "Martin",
         "nationality": "United States",
-        "ethnicity": "White",
+        "race": "White",
         "gender": "Male",
-        "admission_date": "12/14/2022"
+        "admission_date": "12/14/2022",
+        "call_no": 1,
+        "project_id":null
     }
     """
     data = request.json
 
+    call_no = data['call_no']
     url_0 = get_students_url() + "/api/students/new_student"
     url_1 = get_contacts_url() + "/api/contacts/new_student"
+    url_2 = get_courses_url() + f'/api/sections/{call_no}/new_student'
 
     r_list = []
     r_list.append(requests.post(url_0, json=data).text[1:-2])
     r_list.append(requests.post(url_1, json=data).text[1:-2])
+    r_list.append(requests.post(url_2, json=data).text[1:-2])
     response = jsonify(r_list)
     response.status_code = 200
     return response
 
 
-@app.route("/api/students/delete", methods=['DELETE'])
-def delete_a_student():
-    """JSON copy to test on Postman
-    {
-        "uni": "ab1234"
-    }
-    Note: all related contacts will be also deleted
-    """
-    data = request.json
+@app.route("/api/students/delete/<call_no>/<uni>", methods=['DELETE'])
+def delete_a_student(call_no, uni):
 
-    url_0 = get_students_url() + "/api/students/del_student"
-    url_1 = get_contacts_url() + "/api/contacts/del_student"
+    url_0 = get_students_url() + f'/api/students/del_student/{uni}'
+    url_1 = get_contacts_url() + f'/api/contacts/del_student/{uni}'
+    url_2 = get_courses_url() + f'/api/sections/{call_no}/students/{uni}'
 
     r_list = []
-    r_list.append(requests.delete(url_0, json=data).text[1:-2])
-    r_list.append(requests.delete(url_1, json=data).text[1:-2])
+    r_list.append(requests.delete(url_0).text[1:-2])
+    r_list.append(requests.delete(url_1).text[1:-2])
+    r_list.append(requests.delete(url_2).text[1:-2])
 
     response = jsonify(r_list)
-    response.status_code = 302
+    response.status_code = 200
     return response
 
 
@@ -228,7 +228,7 @@ def update_a_student():
         "first_name": "Daviiiid",
         "last_name": "Martin",
         "nationality": "United States",
-        "ethnicity": "White",
+        "race": "White",
         "gender": "Male",
         "admission_date": "12/14/2022"
     }
@@ -249,7 +249,7 @@ def get_student_by_uni(uni):
         {
             "admission_date": "12/08/2022",
             "email": "dw3013@columbia.edu",
-            "ethnicity": "Asian",
+            "race": "Asian",
             "gender": "Female",
             "name": "Di, Wu",
             "nationality": "China",
@@ -274,9 +274,11 @@ def all_student():
     ]
     Note: if a student do not have email, his/her email will be like { email: '' }
     """
-    url = get_students_url() + "/api/students"
-    content = requests.get(url).json()
-    info = StudentProcessing.processing(content)
+    students_url = get_students_url() + "/api/students"
+    courses_url = get_courses_url() + "/api/sections/students"
+    students_content = requests.get(students_url).json()
+    courses_content = requests.get(courses_url).json()
+    info = StudentProcessing.processing(students_content, courses_content)
     response = jsonify(info)
     response.status_code = 200
     return response
