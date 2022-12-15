@@ -49,7 +49,7 @@ class CourseResource:
         return response
 
     @staticmethod
-    def update_a_project(project_id, body):
-        url = get_courses_url() + f'/api/sections/update_project/{project_id}'
+    def update_a_project(call_no, project_id, body):
+        url = get_courses_url() + f'/api/sections/{call_no}/update_project/{project_id}'
         response = requests.put(url, json=body)
         return response

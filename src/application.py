@@ -290,6 +290,21 @@ def all_student():
     return response
 
 
+@app.route("/api/courses/<call_no>/projects/<project_id>/available_students", methods=['GET'])
+def get_all_students_in_one_section_available_for_a_project(call_no, project_id):
+    students_url = get_students_url() + "/api/student_names"
+    courses_url = get_courses_url() + f"/api/sections/{call_no}/students/no_project"
+    all_student_names = requests.get(students_url).json()
+    needed_unis = requests.get(courses_url).json()
+    if int(project_id) > 0:
+        url = get_courses_url() + f'/api/sections/{call_no}/projects/{project_id}/all_students'
+        needed_unis = needed_unis + requests.get(url).json()
+    needed_names_dict = StudentProcessing.get_names_of_students_with_no_project(all_student_names, needed_unis)
+    response = jsonify(needed_names_dict)
+    response.status_code = 200
+    return response
+
+
 @app.route("/api/contacts/<uni>/add/<type>", methods=['POST'])
 def add_new_contact(uni, type):
     """ Note: here type can be phone, email or address
@@ -318,25 +333,36 @@ def add_new_contact(uni, type):
         url = get_contacts_url() + "/api/contacts/" + uni + "/new_"+type
         data = request.json
 
-        check_passed, check_comment, correct_address = verify_address(data)
-        if not check_passed:
-            response = jsonify(f"address verification failed: {check_comment}")
-            response.status_code = 400
-            return response 
+        if type == 'address':
+            check_passed, check_comment, correct_address = verify_address(data)
+            if not check_passed:
+                response = jsonify(f"address verification failed: {check_comment}")
+                response.status_code = 400
+                return response
 
-        try:
-            r = requests.post(url, json=correct_address)
-        except:
-            response = jsonify('Cannot connect to microservice')
-            response.status_code = 500
-            return response
+            try:
+                r = requests.post(url, json=correct_address)
+            except:
+                response = jsonify('Cannot connect to microservice')
+                response.status_code = 500
+                return response
+        else:
+            try:
+                r = requests.post(url, json=data)
+            except:
+                response = jsonify('Cannot connect to microservice')
+                response.status_code = 500
+                return response
     else:
         response = jsonify('Not existing type')
         response.status_code = 400
         return response
     body = r.text[1:-2]
 
-    response = jsonify(body + f"; address verification result: {check_comment}")
+    if type == 'address':
+        response = jsonify(body + f"; address verification result: {check_comment}")
+    else:
+        response = jsonify("Successfully added!")
     response.status_code = 200
     return response
 
@@ -369,25 +395,36 @@ def update_a_contact(uni, type):
         url = get_contacts_url() + "/api/contacts/" + uni + "/update_"+type
         data = request.json
 
-        check_passed, check_comment, correct_address = verify_address(data)
-        if not check_passed:
-            response = jsonify(f"address verification failed: {check_comment}")
-            response.status_code = 400
-            return response 
+        if type == 'address':
+            check_passed, check_comment, correct_address = verify_address(data)
+            if not check_passed:
+                response = jsonify(f"address verification failed: {check_comment}")
+                response.status_code = 400
+                return response
 
-        try:
-            r = requests.put(url, json=correct_address)
-        except:
-            response = jsonify('Cannot connect to microservice')
-            response.status_code = 500
-            return response
+            try:
+                r = requests.put(url, json=correct_address)
+            except:
+                response = jsonify('Cannot connect to microservice')
+                response.status_code = 500
+                return response
+        else:
+            try:
+                r = requests.post(url, json=data)
+            except:
+                response = jsonify('Cannot connect to microservice')
+                response.status_code = 500
+                return response
     else:
         response = jsonify('Not existing type')
         response.status_code = 400
         return response
     body = r.text[1:-2]
 
-    response = jsonify(body + f"; address verification result: {check_comment}")
+    if type == 'address':
+        response = jsonify(body + f"; address verification result: {check_comment}")
+    else:
+        response = jsonify("Successfully updated!")
     response.status_code = 200
     return response
 
@@ -582,8 +619,8 @@ def get_all_projects():
 
 
 # Get or edit or delete a project
-@app.route("/api/courses/projects/<project_id>", methods=['PUT', 'DELETE'])
-def manipulate_a_project(project_id):
+@app.route("/api/courses/<call_no>/projects/<project_id>", methods=['PUT', 'DELETE'])
+def manipulate_a_project(call_no, project_id):
     if request.method == 'DELETE':
         r = CourseResource.del_a_project(project_id)
         response = jsonify(r.text[1:-2])
@@ -591,7 +628,7 @@ def manipulate_a_project(project_id):
         return response
     else:
         body = request.json
-        r = CourseResource.update_a_project(project_id, body)
+        r = CourseResource.update_a_project(call_no, project_id, body)
 
         response = jsonify(r.text[1:-2])
         response.status_code = r.status_code

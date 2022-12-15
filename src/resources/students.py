@@ -27,3 +27,10 @@ class StudentProcessing:
             info_list.append(info)
         return info_list
 
+    @staticmethod
+    def get_names_of_students_with_no_project(all_student_names, needed_unis):
+        needed_names_dict = {}
+        for uni in needed_unis:
+            needed_names_dict[uni] = all_student_names[uni]
+
+        return needed_names_dict
