@@ -44,13 +44,13 @@ def load_user(user_id):
     return User.get(user_id)
 
 
-# @app.before_request
-# def before_decorator():
-#     if request.path not in white_list:
-#         if "Uid" not in request.headers or not User.get(request.headers["Uid"]).is_authenticated:
-#             response = jsonify("User is not authenticated!")
-#             response.status_code = 400
-#             return response
+@app.before_request
+def before_decorator():
+    if request.path not in white_list:
+        if "Uid" not in request.headers or not User.get(request.headers["Uid"]).is_authenticated:
+            response = jsonify("User is not authenticated!")
+            response.status_code = 400
+            return response
 
 # @app.after_request
 # def after_decorator(response):
@@ -83,7 +83,6 @@ def login():
     request_uri = client.prepare_request_uri(
         authorization_endpoint,
         redirect_uri=request.base_url + "/callback",
-        #redirect_uri="http://localhost:4200/",
         scope=["openid", "email", "profile"],
     )
 
@@ -194,12 +193,12 @@ def add_new_student():
     url_1 = get_contacts_url() + "/api/contacts/new_student"
     url_2 = get_courses_url() + f'/api/sections/{call_no}/new_student'
 
-    r_list = []
-    r_list.append(requests.post(url_0, json=data).text[1:-2])
-    r_list.append(requests.post(url_1, json=data).text[1:-2])
-    r_list.append(requests.post(url_2, json=data).text[1:-2])
-    response = jsonify(r_list)
-    response.status_code = 200
+    r0 = requests.post(url_0, json=data)
+    r1 = requests.post(url_1, json=data)
+    r2 = requests.post(url_2, json=data)
+
+    response = jsonify([r0.text[1:-2], r1.text[1:-2], r2.text[1:-2]])
+    response.status_code = max(r0.status_code, r1.status_code, r2.status_code)
     return response
 
 
@@ -210,13 +209,12 @@ def delete_a_student(call_no, uni):
     url_1 = get_contacts_url() + f'/api/contacts/del_student/{uni}'
     url_2 = get_courses_url() + f'/api/sections/{call_no}/students/{uni}'
 
-    r_list = []
-    r_list.append(requests.delete(url_0).text[1:-2])
-    r_list.append(requests.delete(url_1).text[1:-2])
-    r_list.append(requests.delete(url_2).text[1:-2])
+    r0 = requests.delete(url_0)
+    r1 = requests.delete(url_1)
+    r2 = requests.delete(url_2)
 
-    response = jsonify(r_list)
-    response.status_code = 200
+    response = jsonify([r0.text[1:-2], r1.text[1:-2], r2.text[1:-2]])
+    response.status_code = max(r0.status_code, r1.status_code, r2.status_code)
     return response
 
 
@@ -238,13 +236,11 @@ def update_a_student(uni):
     courses_url = get_courses_url() + f'/api/enrollment/{uni}'
     data = request.json
 
-    r_list = []
     r1 = requests.put(students_url, json=data)
     r2 = requests.put(courses_url, json=data)
-    r_list.append(r1.text[1:-2])
-    r_list.append(r2.text[1:-2])
-    response = jsonify(r_list)
-    response.status_code = 200
+
+    response = jsonify([r1.text[1:-2], r2.text[1:-2]])
+    response.status_code = max(r1.status_code, r2.status_code)
     return response
 
 
@@ -267,7 +263,7 @@ def get_student_by_uni(uni):
     content = requests.get(url).json()
     info = StudentProcessing.processing(content)
     response = jsonify(info)
-    response.status_code = 302
+    response.status_code = 200
     return response
 
 
@@ -275,10 +271,20 @@ def get_student_by_uni(uni):
 def all_student():
     """JSON response be like
     [
-        {(student info 1)},
-        {(student info 2)}
+        [{
+            "uni": string,
+            "name": string,
+            "nationality": string,
+            "race": string,
+            "gender": string,
+            "admission_date": string,
+            "call_no": number,
+            "project_id": number,
+            "project_name": string,
+            "team_name": string,
+            "section_period": string
+        }]
     ]
-    Note: if a student do not have email, his/her email will be like { email: '' }
     """
     students_url = get_students_url() + "/api/students"
     courses_url = get_courses_url() + "/api/sections/students"
@@ -292,6 +298,23 @@ def all_student():
 
 @app.route("/api/courses/<call_no>/projects/<project_id>/available_students", methods=['GET'])
 def get_all_students_in_one_section_available_for_a_project(call_no, project_id):
+    """JSON response be like
+        [
+            [{
+                "uni": string,
+                "name": string,
+                "nationality": string,
+                "race": string,
+                "gender": string,
+                "admission_date": string,
+                "call_no": number,
+                "project_id": number,
+                "project_name": string,
+                "team_name": string,
+                "section_period": string
+            }]
+        ]
+        """
     students_url = get_students_url() + "/api/student_names"
     courses_url = get_courses_url() + f"/api/sections/{call_no}/students/no_project"
     all_student_names = requests.get(students_url).json()
@@ -431,20 +454,6 @@ def update_a_contact(uni, type):
 
 @app.route("/api/contacts/<uni>/del/<type>/<note>", methods=['DELETE'])
 def delete_a_contact(uni, type, note):
-    """ Note: here type can be phone, email or address
-    JSON copy to test on Postman (phone)
-    {
-        "description": "mobile"
-    }
-    JSON copy to test on Postman (email)
-    {
-        "description": "personal"
-    }
-    JSON copy to test on Postman (address)
-    {
-        "description": "home"
-    }
-    """
     if type == 'address' or type == 'email' or type == 'phone':
         url = get_contacts_url() + "/api/contacts/" + uni + "/del_"+type + "/" + note
         r = requests.delete(url)
@@ -488,7 +497,7 @@ def get_contact_by_type_and_uni(uni, type):
         return response
 
     response = jsonify(contact)
-    response.status_code = 302
+    response.status_code = 200
     return response
 
 
@@ -515,7 +524,7 @@ def get_contact_by_type(type):
         return response
 
     response = jsonify(contact)
-    response.status_code = 302
+    response.status_code = 200
     return response
 
 
@@ -538,7 +547,7 @@ def get_contact_by_uni(uni):
     list = [addr_list, phone_list, email_list]
 
     response = jsonify(list)
-    response.status_code = 302
+    response.status_code = 200
     return response
 
 
@@ -567,6 +576,22 @@ def all_contact():
 
 @app.route("/api/courses/new_section", methods=['POST'])
 def add_a_new_section():
+    """
+    request:
+    {
+        "call_no": number,
+        "professor": string,
+        "classroom": string,
+        "year": number,
+        "semester": string,
+        "day": string,
+        "start_hr": number,
+        "start_min": number,
+        "end_hr": number,
+        "end_min": number,
+        "section_type": string
+    }
+    """
     body = request.json
     r = CourseResource.add_new_section(body)
 
@@ -577,6 +602,24 @@ def add_a_new_section():
 
 @app.route("/api/courses/all_sections", methods=['GET'])
 def get_all_sections():
+    """
+    response:
+    {
+        "call_no": number,
+        "professor": string,
+        "classroom": string,
+        "year": number,
+        "semester": string,
+        "day": string,
+        "start_hr": number,
+        "start_min": number,
+        "end_hr": number,
+        "end_min": number,
+        "section_type": string,
+        "projects_num": number,
+        "enrollments_num": number
+    }
+    """
     r = CourseResource.get_all_sections()
     response = jsonify(r.json())
     response.status_code = r.status_code
@@ -586,6 +629,22 @@ def get_all_sections():
 # Get or edit or delete a section
 @app.route("/api/courses/<call_no>", methods=['PUT', 'DELETE'])
 def manipulate_a_section(call_no):
+    """
+    For update request:
+    {
+        "call_no": number,
+        "professor": string,
+        "classroom": string,
+        "year": number,
+        "semester": string,
+        "day": string,
+        "start_hr": number,
+        "start_min": number,
+        "end_hr": number,
+        "end_min": number,
+        "section_type": string
+    }
+    """
     if request.method == 'DELETE':
         r = CourseResource.del_a_section(call_no)
         response = jsonify(r.text[1:-2])
@@ -602,6 +661,14 @@ def manipulate_a_section(call_no):
 
 @app.route("/api/courses/<call_no>/new_project", methods=['POST'])
 def add_a_new_project(call_no):
+    """
+    Request:
+    {
+        "project_name": string,
+        "team_name": string,
+        "project_members": string[]
+    }
+    """
     body = request.json
     r = CourseResource.add_new_project(call_no, body)
 
@@ -612,6 +679,19 @@ def add_a_new_project(call_no):
 
 @app.route("/api/courses/all_projects", methods=['GET'])
 def get_all_projects():
+    """
+    Response:
+    [
+        {
+            "call_no": number;
+            "id": number;
+            "project_name": string;
+            "team_name": string;
+            "project_members": string[];
+            "section_period": string;
+        }
+    ]
+    """
     r = CourseResource.get_all_projects()
     response = jsonify(r.json())
     response.status_code = r.status_code
@@ -621,6 +701,14 @@ def get_all_projects():
 # Get or edit or delete a project
 @app.route("/api/courses/<call_no>/projects/<project_id>", methods=['PUT', 'DELETE'])
 def manipulate_a_project(call_no, project_id):
+    """
+    For update request:
+    {
+        "project_name": string,
+        "team_name": string,
+        "project_members": string[]
+    }
+    """
     if request.method == 'DELETE':
         r = CourseResource.del_a_project(project_id)
         response = jsonify(r.text[1:-2])
