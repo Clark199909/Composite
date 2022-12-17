@@ -18,8 +18,8 @@ db = SQLAlchemy(app)
 CORS(app, supports_credentials=True)
 
 # Configuration
-GOOGLE_CLIENT_ID = "971809948453-j5ubj7vbocmg4fquiki07bn3cjv35fo8.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET = "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"
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
 GOOGLE_DISCOVERY_URL = (
     "https://accounts.google.com/.well-known/openid-configuration"
 )
