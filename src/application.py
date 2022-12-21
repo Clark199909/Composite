@@ -204,7 +204,12 @@ def add_new_student():
 
 @app.route("/api/students/delete/<call_no>/<uni>", methods=['DELETE'])
 def delete_a_student(call_no, uni):
-
+    """
+    Delete a student from all tables.
+    :param call_no: call number of course
+    :param uni: student uni
+    :return: JSON reponse
+    """
     url_0 = get_students_url() + f'/api/students/del_student/{uni}'
     url_1 = get_contacts_url() + f'/api/contacts/del_student/{uni}'
     url_2 = get_courses_url() + f'/api/sections/{call_no}/students/{uni}'
@@ -314,7 +319,7 @@ def get_all_students_in_one_section_available_for_a_project(call_no, project_id)
                 "section_period": string
             }]
         ]
-        """
+    """
     students_url = get_students_url() + "/api/student_names"
     courses_url = get_courses_url() + f"/api/sections/{call_no}/students/no_project"
     all_student_names = requests.get(students_url).json()
